@@ -12,8 +12,9 @@ class DWAPlanner(Node):
         super().__init__('dwa_planner')
 
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.marker_pub = self.create_publisher(Marker, '/dwa_trajectories', 10)
 
-        self.create_subscription(Odometry, '/odometry', self.odometry_cb, 10)
+        self.create_subscription(Odometry, '/odom', self.odom_cb, 10)
         self.create_subscription(LaserScan, '/scan', self.scan_cb, 10)
         self.create_subscription(PoseStamped, '/goal_pose', self.goal_cb, 10)
 
@@ -26,7 +27,7 @@ class DWAPlanner(Node):
 
         self.get_logger().info("Custom DWA Planner Started")
 
-    def odometry_cb(self, msg):
+    def odom_cb(self, msg):
         self.pose = msg.pose.pose
         self.velocity = msg.twist.twist
 
@@ -63,8 +64,8 @@ class DWAPlanner(Node):
 
         for v in v_range:
             for w in w_range:
-                trajectory = self.predict_trajectoryectory(v, w)
-                cost = self.evaluate_trajectoryectory(trajectory, v, w)
+                traj = self.predict_trajectory(v, w)
+                cost = self.evaluate_trajectory(traj, v, w)
 
                 if cost < best_cost:
                     best_cost = cost
@@ -75,29 +76,29 @@ class DWAPlanner(Node):
         cmd.angular.z = best_cmd[1]
         self.cmd_pub.publish(cmd)
 
-        self.get_logger().debug(f"Selected v={cmd.linear.x}, w={cmd.angular.z}")
+        self.get_logger().debug(f"Selected v={cmd.linear.x:.2f}, w={cmd.angular.z:.2f}")
 
-    def predict_trajectoryectory(self, v, w):
+    def predict_trajectory(self, v, w):
         x, y, theta = self.get_pose()
-        trajectory = []
+        traj = []
 
         dt = 0.1
         for _ in range(20):
             x += v * math.cos(theta) * dt
             y += v * math.sin(theta) * dt
             theta += w * dt
-            trajectory.append((x, y))
+            traj.append((x, y))
 
-        return trajectory
+        return traj
 
-    def evaluate_trajectoryectory(self, trajectory, v, w):
-        obs_cost = self.obstacle_cost(trajectory)
+    def evaluate_trajectory(self, traj, v, w):
+        obs_cost = self.obstacle_cost(traj)
         if obs_cost == float('inf'):
             return float('inf')
-        goal_cost = np.linalg.norm(np.array(trajectory[-1]) - self.goal)
-        obstacle_cost = self.obstacle_cost(trajectory)
-        smoothness_cost = abs(trajectory[0][0] - trajectory[-1][0])
-        heading_cost = self.heading_cost(trajectory, w)
+        goal_cost = np.linalg.norm(np.array(traj[-1]) - self.goal)
+        obstacle_cost = self.obstacle_cost(traj)
+        smoothness_cost = abs(traj[0][0] - traj[-1][0])
+        heading_cost = self.heading_cost(traj, w)
         vel_cost = self.velocity_cost(v)
 
         return (1.0 * goal_cost + 
@@ -106,7 +107,7 @@ class DWAPlanner(Node):
                0.5 * heading_cost +
                0.2 * vel_cost)
 
-    def obstacle_cost(self, trajectory):
+    def obstacle_cost(self, traj):
         min_dist = float('inf')
 
         rx, ry, rtheta = self.get_pose()
@@ -120,7 +121,7 @@ class DWAPlanner(Node):
                 ox = rx + ox_r * math.cos(rtheta) - oy_r * math.sin(rtheta)
                 oy = ry + ox_r * math.sin(rtheta) + oy_r * math.cos(rtheta)
 
-                for tx, ty in trajectory:
+                for tx, ty in traj:
                     dist = math.hypot(tx - ox, ty - oy)
                     min_dist = min(min_dist, dist)
 
@@ -151,7 +152,7 @@ class DWAPlanner(Node):
 
         return v_min, v_max, w_min, w_max
 
-    def heading_cost(self, trajectory, w):
+    def heading_cost(self, traj, w):
         _, _, theta = self.get_pose()
         predicted_theta = theta + w * 2.0
 
