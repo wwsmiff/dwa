@@ -12,7 +12,6 @@ class DWAPlanner(Node):
         super().__init__('dwa_planner')
 
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
-        self.marker_pub = self.create_publisher(Marker, '/dwa_trajectories', 10)
 
         self.create_subscription(Odometry, '/odom', self.odom_cb, 10)
         self.create_subscription(LaserScan, '/scan', self.scan_cb, 10)
