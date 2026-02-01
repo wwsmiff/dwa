@@ -21,7 +21,7 @@ ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 
 Launch slam_toolbox
 ```
-ros2 run slam_toolbox async_slam_toolbox_node
+ros2 launch slam_toolbox online_async_launch.py
 ```
 
 Launch rviz2
