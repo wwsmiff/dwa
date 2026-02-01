@@ -7,14 +7,16 @@ cd src/
 git clone https://github.com/ROBOTIS-GIT/turtlebot3_simulations.git -b humble
 git clone https://github.com/ROBOTIS-GIT/turtlebot3.git -b humble
 git clone https://github.com/ROBOTIS-GIT/turtlebot3_msgs.git -b humble
+git clone https://github.com/ROBOTIS-GIT/DynamixelSDK.git -b humble
 cd ~/dwa
 colcon build
+source ./install/setup.bash
 ```
 
 ### Run the necessary ros nodes
 Launch gazebo with turtlebot3
 ```
-ros2 launch turtlebot3_gazebo turltebot3_world.launch.py
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 ```
 
 Launch slam_toolbox
