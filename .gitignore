@@ -1,0 +1,7 @@
+build/
+log/
+install/
+./src/turltebot3/
+./src/turltebot3_msgs/
+./src/turltebot3_simulations/
+submodules.ignore
